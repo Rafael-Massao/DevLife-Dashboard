@@ -1,11 +1,9 @@
-// App.jsx — agora com ESTADO de verdade!
-// O array de tarefas deixa de ser fixo e passa a viver no useState.
-// Toda vez que o estado muda, o React RE-RENDERIZA a tela sozinho.
-
 import { useState, useEffect } from "react";
 import Header from "./components/Header";
 import TaskCard from "./components/TaskCard";
 import TaskForm from "./components/TaskForm";
+import StatusRede from "./components/StatusRede";
+import InstallPrompt from "./components/InstallPrompt";
 
 const TAREFAS_INICIAIS = [
   { id: 1, titulo: "Estudar componentes do React", categoria: "Estudos", prioridade: "alta", concluida: false },
@@ -15,8 +13,6 @@ const TAREFAS_INICIAIS = [
 
 function App() {
   // useState: [valorAtual, funçãoQueAtualiza]
-  // A função lazy (() => ...) só roda a leitura do localStorage
-  // UMA vez, na montagem — não a cada renderização.
   const [tarefas, setTarefas] = useState(() => {
     const salvas = localStorage.getItem("devlife-tarefas");
     return salvas ? JSON.parse(salvas) : TAREFAS_INICIAIS;
@@ -25,37 +21,40 @@ function App() {
   const [anuncio, setAnuncio] = useState("");
   const [filtro, setFiltro] = useState("todas");
 
-  // EFEITO COLATERAL: sincronizar o estado com o localStorage.
-  // Roda toda vez que `tarefas` muda (é a dependência do array).
   useEffect(() => {
     console.log("💾 Salvando tarefas no localStorage...");
     localStorage.setItem("devlife-tarefas", JSON.stringify(tarefas));
   }, [tarefas]);
 
   function adicionarTarefa(novaTarefa) {
-    // Nunca alteramos o array diretamente (tarefas.push(...) ❌)
-    // Sempre criamos um NOVO array — imutabilidade é regra de ouro no React.
     setTarefas((atual) => [
       ...atual,
       { ...novaTarefa, id: Date.now(), concluida: false },
     ]);
-    setAnuncio(`Tarefa "${novaTarefa.titulo}" adicionada.`)
+    setAnuncio(`Tarefa "${novaTarefa.titulo}" adicionada.`);
   }
 
   function alternarConcluida(id) {
-    const tarefa = tarefa.find((t) => t.id === id);
-    const setConcluir = !tarefa.concluida;
-    const status = vaiConcluir ? "concluida" : "pendente";
+    const tarefaEncontrada = tarefas.find((t) => t.id === id);
+    if (!tarefaEncontrada) return;
+
+    const vaiConcluir = !tarefaEncontrada.concluida;
+    const status = vaiConcluir ? "concluída" : "pendente";
+
     setTarefas((atual) =>
       atual.map((t) => (t.id === id ? { ...t, concluida: !t.concluida } : t))
     );
-    setAnuncio(`Tarefa "${tarefa.titulo}" marcado como ${status}`)
+    setAnuncio(`Tarefa "${tarefaEncontrada.titulo}" marcada como ${status}.`);
   }
 
   function removerTarefa(id) {
-    const tarefa = tarefa.find((t) => t.id === id);
+    const tarefaEncontrada = tarefas.find((t) => t.id === id);
+
     setTarefas((atual) => atual.filter((t) => t.id !== id));
-    setAnuncio(`Tarefa "${tarefa.titulo}" removida. `);
+
+    if (tarefaEncontrada) {
+      setAnuncio(`Tarefa "${tarefaEncontrada.titulo}" removida.`);
+    }
   }
 
   const tarefasFiltradas = tarefas.filter((t) => {
@@ -68,14 +67,20 @@ function App() {
     <div className="min-h-screen bg-slate-100">
       <a
         href="#conteudo"
-        className={"sr-only focus:not-st-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-white focus:text-slate-500 focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg"} />
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-white focus:text-slate-500 focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg"
+      >
+        Pular para o conteúdo
+      </a>
+      
       <Header />
+      <StatusRede />
+      <InstallPrompt />
 
       <div aria-live="polite" role="status" className="sr-only">
         {anuncio}
       </div>
 
-      <main className="max-w-4xl mx-auto px-6 py-10">
+      <main id="conteudo" className="max-w-4xl mx-auto px-6 py-10">
         <TaskForm onAdicionar={adicionarTarefa} />
 
         <div className="flex items-center justify-between mb-6">
